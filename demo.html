@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Conceptual Quantum Key Distribution Demo</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom styles for better visual appeal */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f4f8; /* Light blue-gray background */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 1rem;
+        }
+        .container {
+            background-color: #ffffff;
+            border-radius: 1.5rem; /* More rounded corners */
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            padding: 2.5rem;
+            max-width: 900px;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+        .section-title {
+            font-size: 1.75rem; /* Larger title */
+            font-weight: 700;
+            color: #2c3e50; /* Darker text for titles */
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+        .card {
+            background-color: #ecf0f1; /* Lighter gray for cards */
+            border-radius: 1rem;
+            padding: 1.5rem;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.06);
+        }
+        .button-primary {
+            background-color: #3498db; /* Blue button */
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.75rem;
+            font-weight: 600;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .button-primary:hover {
+            background-color: #2980b9; /* Darker blue on hover */
+            transform: translateY(-2px);
+        }
+        .button-danger {
+            background-color: #e74c3c; /* Red button */
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.75rem;
+            font-weight: 600;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .button-danger:hover {
+            background-color: #c0392b; /* Darker red on hover */
+            transform: translateY(-2px);
+        }
+        .result-message {
+            font-weight: 600;
+            padding: 0.75rem;
+            border-radius: 0.5rem;
+            text-align: center;
+        }
+        .result-success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .result-warning {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+        .result-error {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        .flex-row-center {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 1rem;
+            flex-wrap: wrap; /* Allow wrapping on small screens */
+        }
+        .input-field {
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            border: 1px solid #bdc3c7;
+            width: 100%;
+            max-width: 150px;
+        }
+        .output-box {
+            background-color: #f9f9f9;
+            border: 1px solid #e0e0e0;
+            border-radius: 0.75rem;
+            padding: 1rem;
+            min-height: 80px;
+            overflow-x: auto; /* Allow horizontal scrolling for long keys */
+            font-family: 'monospace';
+            word-break: break-all; /* Break long words */
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="section-title">Conceptual Quantum Key Distribution (QKD) Demo</h1>
+        <p class="text-center text-gray-700 mb-4">
+            This demonstration illustrates a core principle of Quantum Key Distribution: the "measurement problem," where observing a quantum state changes it. This allows Alice and Bob to detect if an eavesdropper (Eve) has tried to intercept their quantum key.
+            <br>
+            <strong>Disclaimer: This is a simplified conceptual model for educational purposes only and is NOT a secure cryptographic implementation.</strong>
+        </p>
+
+        <div class="card">
+            <h2 class="text-xl font-semibold text-gray-800 mb-3">Settings</h2>
+            <div class="flex items-center justify-center gap-4 flex-wrap">
+                <label for="keyLength" class="text-gray-700">Key Length (bits):</label>
+                <input type="number" id="keyLength" value="16" min="4" max="64" class="input-field">
+                <label for="eavesdropChance" class="text-gray-700">Eve's Eavesdrop Chance (%):</label>
+                <input type="number" id="eavesdropChance" value="0" min="0" max="100" class="input-field">
+            </div>
+        </div>
+
+        <div class="card">
+            <h2 class="text-xl font-semibold text-gray-800 mb-3">Alice's Side</h2>
+            <div class="flex-row-center mb-4">
+                <button id="generateAliceKeys" class="button-primary">1. Alice Generates Bits & Bases</button>
+            </div>
+            <p class="text-gray-700 mb-2">Alice's Sent Photons (Conceptual Polarizations):</p>
+            <div id="alicePhotons" class="output-box text-sm"></div>
+            <p class="text-gray-700 mt-4 mb-2">Alice's Chosen Bases:</p>
+            <div id="aliceBases" class="output-box text-sm"></div>
+        </div>
+
+        <div class="card">
+            <h2 class="text-xl font-semibold text-gray-800 mb-3">Eve's Side (Optional Eavesdropper)</h2>
+            <div class="flex-row-center">
+                <button id="eveIntercept" class="button-danger">2. Eve Intercepts (if enabled)</button>
+            </div>
+            <p class="text-gray-700 mt-4 mb-2">Eve's Measured Photons:</p>
+            <div id="eveMeasured" class="output-box text-sm"></div>
+            <p class="text-gray-700 mt-4 mb-2">Eve's Chosen Bases:</p>
+            <div id="eveBases" class="output-box text-sm"></div>
+        </div>
+
+        <div class="card">
+            <h2 class="text-xl font-semibold text-gray-800 mb-3">Bob's Side</h2>
+            <div class="flex-row-center">
+                <button id="bobMeasure" class="button-primary">3. Bob Measures Photons</button>
+            </div>
+            <p class="text-gray-700 mt-4 mb-2">Bob's Measured Bits:</p>
+            <div id="bobMeasured" class="output-box text-sm"></div>
+            <p class="text-gray-700 mt-4 mb-2">Bob's Chosen Bases:</p>
+            <div id="bobBases" class="output-box text-sm"></div>
+        </div>
+
+        <div class="card">
+            <h2 class="text-xl font-semibold text-gray-800 mb-3">Key Reconciliation & Eavesdropping Detection</h2>
+            <div class="flex-row-center mb-4">
+                <button id="reconcileKeys" class="button-primary">4. Reconcile Keys & Check for Eavesdropping</button>
+            </div>
+            <p class="text-gray-700 mt-4 mb-2">Shared Secret Key:</p>
+            <div id="sharedKey" class="output-box text-sm"></div>
+            <div id="resultMessage" class="result-message mt-4 hidden"></div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables to store states
+        let aliceBits = [];
+        let aliceBases = []; // 0 for Rectilinear (+,x), 1 for Diagonal (/, \)
+        let eveMeasuredBits = [];
+        let eveBases = [];
+        let bobMeasuredBits = [];
+        let bobBases = [];
+        let keyLength = 16;
+        let eavesdropChance = 0;
+
+        // DOM elements
+        const keyLengthInput = document.getElementById('keyLength');
+        const eavesdropChanceInput = document.getElementById('eavesdropChance');
+        const generateAliceKeysBtn = document.getElementById('generateAliceKeys');
+        const eveInterceptBtn = document.getElementById('eveIntercept');
+        const bobMeasureBtn = document.getElementById('bobMeasure');
+        const reconcileKeysBtn = document.getElementById('reconcileKeys');
+        const alicePhotonsDiv = document.getElementById('alicePhotons');
+        const aliceBasesDiv = document.getElementById('aliceBases');
+        const eveMeasuredDiv = document.getElementById('eveMeasured');
+        const eveBasesDiv = document.getElementById('eveBases');
+        const bobMeasuredDiv = document.getElementById('bobMeasured');
+        const bobBasesDiv = document.getElementById('bobBases');
+        const sharedKeyDiv = document.getElementById('sharedKey');
+        const resultMessageDiv = document.getElementById('resultMessage');
+
+        // Helper function to update output divs
+        function updateOutput(element, data) {
+            element.textContent = data.join(' ');
+        }
+
+        // Helper to display messages
+        function showMessage(message, type) {
+            resultMessageDiv.textContent = message;
+            resultMessageDiv.className = `result-message mt-4 ${type}`;
+            resultMessageDiv.classList.remove('hidden');
+        }
+
+        // Step 1: Alice Generates Bits and Bases
+        generateAliceKeysBtn.addEventListener('click', () => {
+            keyLength = parseInt(keyLengthInput.value);
+            if (isNaN(keyLength) || keyLength < 4 || keyLength > 64) {
+                showMessage("Please enter a valid key length between 4 and 64.", "result-error");
+                return;
+            }
+
+            aliceBits = [];
+            aliceBases = [];
+            eveMeasuredBits = []; // Reset Eve's state
+            eveBases = [];
+            bobMeasuredBits = []; // Reset Bob's state
+            bobBases = [];
+            sharedKeyDiv.textContent = '';
+            resultMessageDiv.classList.add('hidden');
+
+            for (let i = 0; i < keyLength; i++) {
+                aliceBits.push(Math.round(Math.random())); // 0 or 1
+                aliceBases.push(Math.round(Math.random())); // 0 (Rectilinear) or 1 (Diagonal)
+            }
+
+            // Display Alice's initial states (conceptual)
+            // For demonstration, we show Alice's bits and bases.
+            // In real QKD, only the photons (bits + bases encoded) are sent.
+            updateOutput(alicePhotonsDiv, aliceBits.map((bit, i) => {
+                const base = aliceBases[i];
+                // Represent polarization: 0=H, 1=V for Rectilinear; 0=D1, 1=D2 for Diagonal
+                if (base === 0) return bit === 0 ? 'H(0)' : 'V(1)'; // Horizontal/Vertical
+                else return bit === 0 ? 'D1(0)' : 'D2(1)'; // Diagonal
+            }));
+            updateOutput(aliceBasesDiv, aliceBases.map(b => b === 0 ? 'Rect' : 'Diag'));
+
+            showMessage("Alice has generated her bits and bases. Photons are conceptually sent.", "result-success");
+        });
+
+        // Step 2: Eve Intercepts (Optional)
+        eveInterceptBtn.addEventListener('click', () => {
+            eavesdropChance = parseInt(eavesdropChanceInput.value);
+            if (isNaN(eavesdropChance) || eavesdropChance < 0 || eavesdropChance > 100) {
+                showMessage("Please enter a valid eavesdrop chance between 0 and 100.", "result-error");
+                return;
+            }
+
+            if (aliceBits.length === 0) {
+                showMessage("Please generate Alice's bits first.", "result-warning");
+                return;
+            }
+
+            eveMeasuredBits = [];
+            eveBases = [];
+
+            let interceptedCount = 0;
+            for (let i = 0; i < keyLength; i++) {
+                // Eve only intercepts if random chance allows
+                if (Math.random() * 100 < eavesdropChance) {
+                    interceptedCount++;
+                    eveBases.push(Math.round(Math.random())); // Eve randomly chooses a base
+                    const originalBit = aliceBits[i];
+                    const originalBase = aliceBases[i];
+                    const eveBase = eveBases[i];
+
+                    let measuredBit;
+                    if (originalBase === eveBase) {
+                        // Eve measures with the correct base, gets the correct bit
+                        measuredBit = originalBit;
+                    } else {
+                        // Eve measures with the wrong base, gets a random bit (50% chance of error)
+                        measuredBit = Math.round(Math.random());
+                    }
+                    eveMeasuredBits.push(measuredBit);
+
+                    // If Eve measured with the wrong base, she might change the original photon's state
+                    // This is the "disturbance" principle.
+                    if (originalBase !== eveBase) {
+                        aliceBits[i] = measuredBit; // Eve's measurement changes Alice's original bit for Bob
+                    }
+                } else {
+                    // Eve doesn't intercept this photon, so no measurement, no disturbance
+                    eveMeasuredBits.push('N/A');
+                    eveBases.push('N/A');
+                }
+            }
+            updateOutput(eveMeasuredDiv, eveMeasuredBits);
+            updateOutput(eveBasesDiv, eveBases.map(b => (b === 0 ? 'Rect' : b === 1 ? 'Diag' : b)));
+
+            if (interceptedCount > 0) {
+                showMessage(`Eve intercepted and measured ${interceptedCount} photons. Some original states may have been disturbed.`, "result-warning");
+            } else {
+                showMessage("Eve did not intercept any photons this time.", "result-success");
+            }
+        });
+
+        // Step 3: Bob Measures Photons
+        bobMeasureBtn.addEventListener('click', () => {
+            if (aliceBits.length === 0) {
+                showMessage("Please generate Alice's bits first.", "result-warning");
+                return;
+            }
+
+            bobMeasuredBits = [];
+            bobBases = [];
+
+            for (let i = 0; i < keyLength; i++) {
+                bobBases.push(Math.round(Math.random())); // Bob randomly chooses a base
+                const originalBit = aliceBits[i]; // This is the bit Alice sent (potentially altered by Eve)
+                const originalBase = aliceBases[i]; // This is Alice's original sending base
+                const bobBase = bobBases[i];
+
+                let measuredBit;
+                if (originalBase === bobBase) {
+                    // Bob measures with the correct base, gets the correct bit (or Eve's altered bit)
+                    measuredBit = originalBit;
+                } else {
+                    // Bob measures with the wrong base, gets a random bit (50% chance of error)
+                    measuredBit = Math.round(Math.random());
+                }
+                bobMeasuredBits.push(measuredBit);
+            }
+            updateOutput(bobMeasuredDiv, bobMeasuredBits);
+            updateOutput(bobBasesDiv, bobBases.map(b => b === 0 ? 'Rect' : 'Diag'));
+            showMessage("Bob has measured the photons with his randomly chosen bases.", "result-success");
+        });
+
+        // Step 4: Reconcile Keys & Check for Eavesdropping
+        reconcileKeysBtn.addEventListener('click', () => {
+            if (aliceBits.length === 0 || bobMeasuredBits.length === 0) {
+                showMessage("Please complete steps 1 and 3 first.", "result-warning");
+                return;
+            }
+
+            let rawAliceKey = [];
+            let rawBobKey = [];
+            let matchingBasesCount = 0;
+
+            // First, Alice and Bob publicly announce their chosen bases.
+            // They keep only the bits where their bases matched.
+            for (let i = 0; i < keyLength; i++) {
+                if (aliceBases[i] === bobBases[i]) {
+                    rawAliceKey.push(aliceBits[i]);
+                    rawBobKey.push(bobMeasuredBits[i]);
+                    matchingBasesCount++;
+                }
+            }
+
+            // If no matching bases, no key can be formed
+            if (matchingBasesCount === 0) {
+                sharedKeyDiv.textContent = 'No shared key could be established (no matching bases).';
+                showMessage("Key establishment failed. Try again with more bits.", "result-error");
+                return;
+            }
+
+            // Now, they compare a subset of their matching bits to check for errors/eavesdropping.
+            // In a real protocol, they would use a separate error correction and privacy amplification step.
+            // Here, we'll just check for discrepancies in the raw keys.
+            let errorsDetected = 0;
+            for (let i = 0; i < rawAliceKey.length; i++) {
+                if (rawAliceKey[i] !== rawBobKey[i]) {
+                    errorsDetected++;
+                }
+            }
+
+            let finalSharedKey = [];
+            if (errorsDetected === 0) {
+                finalSharedKey = rawAliceKey; // If no errors, the key is established
+                showMessage(`Key established successfully! No eavesdropping detected. Shared key length: ${finalSharedKey.length} bits.`, "result-success");
+            } else {
+                // If errors are detected, it indicates eavesdropping or channel noise.
+                // In a real QKD, they would discard the key and restart.
+                showMessage(`Eavesdropping detected! ${errorsDetected} discrepancies found. Key discarded.`, "result-error");
+                finalSharedKey = []; // Discard the key
+            }
+
+            updateOutput(sharedKeyDiv, finalSharedKey);
+        });
+
+        // Initialize display
+        window.onload = () => {
+            alicePhotonsDiv.textContent = 'Click "Alice Generates Bits & Bases" to start.';
+            aliceBasesDiv.textContent = '...';
+            eveMeasuredDiv.textContent = '...';
+            eveBasesDiv.textContent = '...';
+            bobMeasuredDiv.textContent = '...';
+            bobBasesDiv.textContent = '...';
+            sharedKeyDiv.textContent = '...';
+            resultMessageDiv.classList.add('hidden');
+        };
+
+    </script>
+</body>
+</html>
