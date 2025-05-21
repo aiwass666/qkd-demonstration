@@ -1,4 +1,4 @@
-# Conceptual Quantum Key Distribution (QKD) Demo
+# Conceptual Quantum Key Distribution (QKD) Demonstration
 
 This repository contains a simple, interactive web-based demonstration of a core principle behind Quantum Key Distribution (QKD), specifically the "measurement problem" as applied in protocols like BB84. The demo illustrates how the act of observing a quantum state inherently disturbs it, a property that can be leveraged to detect eavesdropping during cryptographic key exchange.
 
